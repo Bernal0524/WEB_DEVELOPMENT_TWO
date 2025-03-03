@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from "react";
+import React, { useEffect, useContext } from "react";
 import { BudgetStateContext, BudgetDispatchContext } from "./context/BudgetContext";
 import BudgetForm from "./components/BudgetForm";
 import BudgetTracker from "./components/BudgetTracker";
@@ -8,26 +8,18 @@ import { FilterByCategory } from "./components/FilterByCategory";
 
 function App() {
   const state = useContext(BudgetStateContext);
-  const dispatch = useContext(BudgetDispatchContext); // Usar dispatch para cambiar la categoría
+  const dispatch = useContext(BudgetDispatchContext);
   const isValidBudget = state?.budget > 0;
 
-  // Guardar budget en localStorage cuando cambie
+  // Guardar presupuesto en localStorage cuando cambie
   useEffect(() => {
     localStorage.setItem("budget", state.budget.toString());
   }, [state.budget]);
 
-  // Guardar expenses en localStorage cuando cambien
+  // Guardar gastos en localStorage cuando cambien
   useEffect(() => {
     localStorage.setItem("expenses", JSON.stringify(state.expenses));
   }, [state.expenses]);
-
-  // Función para manejar el cambio de categoría en el filtro
-  const handleCategoryChange = (event) => {
-    dispatch({
-      type: "add-filter-category",
-      payload: { categoryId: event.target.value },
-    });
-  };
 
   return (
     <>
@@ -37,11 +29,18 @@ function App() {
         </h1>
       </header>
       <div className="max-w-3xl mx-auto bg-white shadow-lg rounded-lg mt-10 p-10">
+        {/* Mostrar error sobre el formulario y la lista de gastos */}
+        {state.error && (
+          <div className="bg-red-500 text-white p-3 mb-5 rounded text-center font-bold">
+            {state.error}
+          </div>
+        )}
+
         {isValidBudget ? (
           <>
             <BudgetTracker />
-            <FilterByCategory onCategoryChange={handleCategoryChange} /> {/* Filtrar por categoría */}
-            <ExpenseList /> {/* Ya no se necesita pasar `selectedCategory` */}
+            <FilterByCategory />
+            <ExpenseList />
             <ExpenseModal />
           </>
         ) : (

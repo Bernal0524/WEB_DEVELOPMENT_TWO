@@ -1,4 +1,3 @@
-// Funciones para obtener datos desde localStorage
 const initialBudget = () => {
   const localStorageBudget = localStorage.getItem("budget");
   return localStorageBudget ? parseFloat(localStorageBudget) : 0;
@@ -9,20 +8,19 @@ const localStorageExpenses = () => {
   return localStorageExpenses ? JSON.parse(localStorageExpenses) : [];
 };
 
-// Estado inicial del reducer
 export const initialState = {
   budget: initialBudget(),
   modal: false,
   expenses: localStorageExpenses(),
   editingId: "",
   currentCategory: "",
+  error: "",
 };
 
 export const budgetReducer = (state, action) => {
   switch (action.type) {
     case "add-budget":
-      localStorage.setItem("budget", action.payload.budget); // Guardar en localStorage
-      return { ...state, budget: action.payload.budget };
+      return { ...state, budget: action.payload.budget, error: "" };
 
     case "show-modal":
       return { ...state, modal: true };
@@ -30,26 +28,24 @@ export const budgetReducer = (state, action) => {
     case "close-modal":
       return { ...state, modal: false, editingId: "" };
 
-    case "add-expense":
-      const newExpenses = [
-        ...state.expenses,
-        { ...action.payload.expense, id: new Date().getTime() },
-      ];
-      localStorage.setItem("expenses", JSON.stringify(newExpenses)); // Guardar en localStorage
+    case "add-expense": {
+      const newTotal = state.expenses.reduce((sum, exp) => sum + exp.amount, 0) + action.payload.expense.amount;
+      if (newTotal > state.budget) {
+        return { ...state, error: "El gasto excede el presupuesto disponible" };
+      }
       return {
         ...state,
-        expenses: newExpenses,
+        expenses: [...state.expenses, { ...action.payload.expense, id: new Date().getTime() }],
         modal: false,
+        error: "",
       };
+    }
 
     case "remove-expense":
-      const updatedExpenses = state.expenses.filter(
-        (expense) => expense.id !== action.payload.id
-      );
-      localStorage.setItem("expenses", JSON.stringify(updatedExpenses)); // Guardar en localStorage
       return {
         ...state,
-        expenses: updatedExpenses,
+        expenses: state.expenses.filter((expense) => expense.id !== action.payload.id),
+        error: "",
       };
 
     case "get-expense-by-id":
@@ -59,24 +55,36 @@ export const budgetReducer = (state, action) => {
         modal: true,
       };
 
-    case "update-expense":
-      const modifiedExpenses = state.expenses.map((expense) =>
-        expense.id === action.payload.expense.id
-          ? action.payload.expense
-          : expense
+    case "update-expense": {
+      const updatedExpenses = state.expenses.map((exp) =>
+        exp.id === action.payload.expense.id ? action.payload.expense : exp
       );
-      localStorage.setItem("expenses", JSON.stringify(modifiedExpenses)); // Guardar en localStorage
+      const newTotal = updatedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+      if (newTotal > state.budget) {
+        return { ...state, error: "El gasto actualizado excede el presupuesto disponible" };
+      }
       return {
         ...state,
-        expenses: modifiedExpenses,
+        expenses: updatedExpenses,
         modal: false,
         editingId: "",
+        error: "",
       };
+    }
 
     case "add-filter-category":
       return {
         ...state,
-        currentCategory: action.payload.categoryId, // Actualizar categoría seleccionada
+        currentCategory: action.payload.categoryId,
+      };
+
+    case "reset-app": // Acción para reiniciar la app
+      localStorage.removeItem("budget");
+      localStorage.removeItem("expenses");
+      return {
+        ...initialState,
+        budget: 0,
+        expenses: [],
       };
 
     default:
