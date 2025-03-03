@@ -1,4 +1,4 @@
-export const initialState = {
+export const initialState = { 
   budget: 0,
   modal: false,
   expenses: [],  // Inicialización del array vacío
@@ -14,7 +14,7 @@ export const budgetReducer = (state, action) => {
       return { ...state, modal: true };
 
     case "close-modal":
-      return { ...state, modal: false };
+      return { ...state, modal: false, editingId: "" }; // Se agregó editingId: ""
 
     case "add-expense":
       return {
@@ -37,6 +37,18 @@ export const budgetReducer = (state, action) => {
         ...state,
         editingId: action.payload.id,
         modal: true
+      };
+
+    case "update-expense": 
+      return {
+        ...state,
+        expenses: state.expenses.map(expense => 
+          expense.id === action.payload.expense.id ? 
+          action.payload.expense : 
+          expense
+        ),
+        modal: false,
+        editingId: ""
       };
 
     default:

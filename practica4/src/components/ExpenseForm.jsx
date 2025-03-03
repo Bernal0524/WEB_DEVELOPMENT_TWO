@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { categories } from "../data/categories";
 import DatePicker from 'react-date-picker';
 import 'react-date-picker/dist/DatePicker.css';
@@ -18,6 +18,16 @@ export const ExpenseForm = () => {
   const dispatch = useContext(BudgetDispatchContext);
   const state = useContext(BudgetStateContext);
 
+  // useEffect para cargar el gasto en edición si editingId cambia
+  useEffect(() => { 
+    if (state.editingId) {
+      const editingExpense = state.expenses.find(exp => exp.id === state.editingId);
+      if (editingExpense) {
+        setExpense(editingExpense);
+      }
+    }
+  }, [state.editingId]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     const isAmountField = name === 'amount';
@@ -34,34 +44,44 @@ export const ExpenseForm = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e) => { 
     e.preventDefault();
-    if (Object.values(expense).some((val) => val === '' || val === 0)) {
-      setError('Todos los campos son obligatorios');
+
+    // Validación
+    if (Object.values(expense).includes('')) {
+      setError('Todos los Campos son Obligatorios');
       return;
     }
-    dispatch({ type: 'add-expense', payload: { expense } });
+
+    if (state.editingId) {
+      dispatch({ type: 'update-expense', payload: { expense: { id: state.editingId, ...expense } } });
+    } else {
+      dispatch({ type: 'add-expense', payload: { expense } });
+    }
+
+    // Reiniciar el state/form
     setExpense({
       expenseName: '',
       amount: 0,
       category: '',
       date: new Date(),
     });
+
     setError('');
   };
 
   return (
     <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md w-full max-w-md mx-auto">
-      <div className="text-center">
-        <label className="text-2xl text-black-600 font-bold">NUEVO GASTO</label>
-      </div>
+      <fieldset>
+        <legend className="text-center text-2xl text-black-600 font-bold">
+          {state.editingId ? "GUARDAR CAMBIOS" : "NUEVO GASTO"}
+        </legend>
+      </fieldset>
 
       {error && <ErrorMessage message={error} />}
 
       <div className="flex flex-col gap-2 mb-4">
-        <label htmlFor="expenseName" className="text-xl">
-          Nombre del Gasto:
-        </label>
+        <label htmlFor="expenseName" className="text-xl">Nombre del Gasto:</label>
         <input
           id="expenseName"
           type="text"
@@ -74,9 +94,7 @@ export const ExpenseForm = () => {
       </div>
 
       <div className="flex flex-col gap-2 mb-4">
-        <label htmlFor="amount" className="text-xl">
-          Monto:
-        </label>
+        <label htmlFor="amount" className="text-xl">Monto:</label>
         <input
           id="amount"
           type="number"
@@ -89,9 +107,7 @@ export const ExpenseForm = () => {
       </div>
 
       <div className="flex flex-col gap-2 mb-4">
-        <label htmlFor="category" className="text-xl">
-          Categoría:
-        </label>
+        <label htmlFor="category" className="text-xl">Categoría:</label>
         <select
           id="category"
           className="bg-slate-100 p-2 border rounded-md"
@@ -107,9 +123,7 @@ export const ExpenseForm = () => {
       </div>
 
       <div className="flex flex-col gap-2 mb-4">
-        <label htmlFor="date" className="text-xl">
-          Fecha del Gasto:
-        </label>
+        <label htmlFor="date" className="text-xl">Fecha del Gasto:</label>
         <div className="flex items-center">
           <DatePicker
             className="bg-slate-100 p-2 border rounded-md"
@@ -122,7 +136,7 @@ export const ExpenseForm = () => {
       <input
         type="submit"
         className="bg-blue-600 cursor-pointer w-full p-2 text-white uppercase font-bold rounded-md"
-        value="Registrar gasto"
+        value={state.editingId ? "GUARDAR CAMBIOS" : "REGISTRAR GASTO"}
       />
     </form>
   );
