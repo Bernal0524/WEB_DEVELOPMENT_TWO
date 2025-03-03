@@ -1,19 +1,32 @@
-import React, { useState, useContext } from 'react';
-import { BudgetStateContext } from './context/BudgetContext';
-import BudgetForm from './components/BudgetForm';
-import BudgetTracker from './components/BudgetTracker';
-import ExpenseModal from './components/ExpenseModal';
-import { ExpenseList } from './components/ExpenseList'; 
-import { FilterByCategory } from './components/FilterByCategory';
+import React, { useContext, useEffect } from "react";
+import { BudgetStateContext, BudgetDispatchContext } from "./context/BudgetContext";
+import BudgetForm from "./components/BudgetForm";
+import BudgetTracker from "./components/BudgetTracker";
+import ExpenseModal from "./components/ExpenseModal";
+import { ExpenseList } from "./components/ExpenseList";
+import { FilterByCategory } from "./components/FilterByCategory";
 
 function App() {
   const state = useContext(BudgetStateContext);
-  const [selectedCategory, setSelectedCategory] = useState(""); // Estado para el filtro de categoría
+  const dispatch = useContext(BudgetDispatchContext); // Usar dispatch para cambiar la categoría
   const isValidBudget = state?.budget > 0;
+
+  // Guardar budget en localStorage cuando cambie
+  useEffect(() => {
+    localStorage.setItem("budget", state.budget.toString());
+  }, [state.budget]);
+
+  // Guardar expenses en localStorage cuando cambien
+  useEffect(() => {
+    localStorage.setItem("expenses", JSON.stringify(state.expenses));
+  }, [state.expenses]);
 
   // Función para manejar el cambio de categoría en el filtro
   const handleCategoryChange = (event) => {
-    setSelectedCategory(event.target.value);
+    dispatch({
+      type: "add-filter-category",
+      payload: { categoryId: event.target.value },
+    });
   };
 
   return (
@@ -27,8 +40,8 @@ function App() {
         {isValidBudget ? (
           <>
             <BudgetTracker />
-            <FilterByCategory onCategoryChange={handleCategoryChange} /> {/* Filtro por categoría */}
-            <ExpenseList selectedCategory={selectedCategory} /> {/* Pasa el filtro a ExpenseList */}
+            <FilterByCategory onCategoryChange={handleCategoryChange} /> {/* Filtrar por categoría */}
+            <ExpenseList /> {/* Ya no se necesita pasar `selectedCategory` */}
             <ExpenseModal />
           </>
         ) : (
