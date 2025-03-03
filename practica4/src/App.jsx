@@ -1,13 +1,20 @@
-import React, { useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import { BudgetStateContext } from './context/BudgetContext';
 import BudgetForm from './components/BudgetForm';
 import BudgetTracker from './components/BudgetTracker';
 import ExpenseModal from './components/ExpenseModal';
-import { ExpenseList } from './components/ExpenseList'; // Asegúrate de importar ExpenseList
+import { ExpenseList } from './components/ExpenseList'; 
+import { FilterByCategory } from './components/FilterByCategory';
 
 function App() {
   const state = useContext(BudgetStateContext);
+  const [selectedCategory, setSelectedCategory] = useState(""); // Estado para el filtro de categoría
   const isValidBudget = state?.budget > 0;
+
+  // Función para manejar el cambio de categoría en el filtro
+  const handleCategoryChange = (event) => {
+    setSelectedCategory(event.target.value);
+  };
 
   return (
     <>
@@ -20,7 +27,8 @@ function App() {
         {isValidBudget ? (
           <>
             <BudgetTracker />
-            <ExpenseList /> {/* Renderiza ExpenseList aquí */}
+            <FilterByCategory onCategoryChange={handleCategoryChange} /> {/* Filtro por categoría */}
+            <ExpenseList selectedCategory={selectedCategory} /> {/* Pasa el filtro a ExpenseList */}
             <ExpenseModal />
           </>
         ) : (
