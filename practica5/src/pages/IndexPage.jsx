@@ -1,12 +1,18 @@
 import React from 'react';
 import DrinkCard from "../components/DrinkCard";
 import { useAppStore } from "../store/useAppStore";
+import useNotificationStore from "../notificationStore"; // Importa el store de notificaciones
 
 export const IndexPage = () => {
-
   const drinks = useAppStore((state) => state.drinks);
+  const addNotification = useNotificationStore((state) => state.addNotification); // Extrae la función addNotification
 
-  // Validar si drinks es un array válido
+  const handleAddToFavorites = (drink) => {
+    // Lógica para agregar la bebida a favoritos
+    useAppStore.getState().addFavorite(drink);
+    addNotification('Bebida añadida a favoritos', 'success');
+  };
+
   const hasDrinks = Array.isArray(drinks) && drinks.length > 0;
 
   return (
@@ -18,6 +24,7 @@ export const IndexPage = () => {
             <DrinkCard
               key={drink.idDrink}
               drink={drink}
+              onAddToFavorites={handleAddToFavorites}  // Pasamos la función al componente DrinkCard
             />
           ))}
         </div>
