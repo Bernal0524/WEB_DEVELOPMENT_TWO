@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
-import User from '../models/User'; // Asegúrate de que la ruta sea correcta
+import User from '../models/User';  // Ajusta la ruta si es necesario
+import { hashPassword } from '../utils/hashPassword';  // Importa la función para hacer el hash
 
+// Función para crear la cuenta
 export const createAccount = async (req: Request, res: Response): Promise<void> => {
     const { name, password, email, username } = req.body;
 
@@ -20,8 +22,16 @@ export const createAccount = async (req: Request, res: Response): Promise<void> 
         return;
     }
 
-    // Crear un nuevo usuario si no existe
-    const user = new User(req.body);
+    // Hashear la contraseña antes de crear el usuario
+    const hashedPassword = await hashPassword(password);
+
+    // Crear un nuevo usuario con la contraseña hasheada
+    const user = new User({
+        ...req.body,
+        password: hashedPassword // Asignar la contraseña hasheada
+    });
+
+    // Guardar el usuario en la base de datos
     await user.save();
 
     // Responder con éxito
