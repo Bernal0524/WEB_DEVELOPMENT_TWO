@@ -1,39 +1,59 @@
-import { Request, Response } from 'express';
-import User from '../models/User';  // Ajusta la ruta si es necesario
-import { hashPassword } from '../utils/hashPassword';  // Importa la función para hacer el hash
+import { Request, Response } from "express";
+import User from "../models/Users";
+import { hashPassword, validatePassword } from "../utils/auth"; 
+import { validationResult } from 'express-validator';
 
-// Función para crear la cuenta
-export const createAccount = async (req: Request, res: Response): Promise<void> => {
-    const { name, password, email, username } = req.body;
+export const createAccount = async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  console.log(errors);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
 
-    // Verificar si el correo electrónico ya está registrado
-    const userExists = await User.findOne({ email });
+  const { name, password, email, username } = req.body;
 
-    if (userExists) {
-        res.status(409).json({ message: "User already exists for this email" });
-        return;
-    }
+  const userExists = await User.findOne({ email });
+  if (userExists) {
+    res.status(409).json({ message: "User already exists for this email" });
+    return;
+  }
 
-    // Verificar si el nombre de usuario ya está registrado
-    const usernameExists = await User.findOne({ username });
+  const usernameExists = await User.findOne({ username });
+  if (usernameExists) {
+    res.status(409).json({ message: "Username already exists" });
+    return;
+  }
 
-    if (usernameExists) {
-        res.status(409).json({ message: "Username already exists" });
-        return;
-    }
+  const user = new User(req.body);
+  user.password = await hashPassword(password);
+  await user.save();
+  res.status(201).json({ message: 'User created successfully' });
+};
 
-    // Hashear la contraseña antes de crear el usuario
-    const hashedPassword = await hashPassword(password);
+export const login = async (req: Request, res: Response) => {
+  // Validar los errores en la solicitud
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
 
-    // Crear un nuevo usuario con la contraseña hasheada
-    const user = new User({
-        ...req.body,
-        password: hashedPassword // Asignar la contraseña hasheada
-    });
+  // Extraer email y password del cuerpo de la solicitud
+  const { email, password } = req.body;
 
-    // Guardar el usuario en la base de datos
-    await user.save();
+  // Buscar al usuario en la base de datos
+  const user = await User.findOne({ email });
+  if (!user) {
+    const error = new Error('Invalid credentials');
+    return res.status(401).json({ error: error.message });
+  }
 
-    // Responder con éxito
-    res.status(201).json({ message: 'User created successfully' });
+  // Comprobar si el password es correcto (OJO: Importar validatePassword de utils/auth)
+  const isPasswordCorrect = await validatePassword(password, user.password);
+  if (!isPasswordCorrect) {
+    const error = new Error('Invalid credentials');
+    return res.status(401).json({ error: error.message });
+  }
+
+  // Si todo es correcto, enviar respuesta de autenticación exitosa
+  res.status(200).send('Authenticated');
 };

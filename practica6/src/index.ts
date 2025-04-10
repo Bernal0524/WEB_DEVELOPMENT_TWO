@@ -1,18 +1,20 @@
 import express from 'express';
 import router from './routes';
-import { connectDB } from './config/db';
+import { connectBD } from './config/db'; // Importación de la función de conexión
 
 const PORT = 3000;
 const app = express();
 
-// Conectar a MongoDB antes de levantar el servidor
-connectDB();
+app.use(express.json()); // Middleware para procesar JSON en las solicitudes
+app.use('/', router); // Configuración de rutas
 
-app.use(express.json()); // Middleware para manejar JSON
-app.use('/', router); // Usar las rutas definidas en 'routes.ts'
-
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en el puerto ${PORT}`);
+// Conexión a la base de datos antes de levantar el servidor
+connectBD().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Servidor corriendo en el puerto ${PORT}`);
+  });
+}).catch((error) => {
+  console.error('No se pudo conectar a la base de datos:', error);
 });
 
 export default app;
